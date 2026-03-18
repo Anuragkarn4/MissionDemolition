@@ -7,6 +7,7 @@ public class Slingshot : MonoBehaviour
     [Header("Inscribed")]
     public GameObject ProjectilePrefab;
     public float VelocityMult = 10f;
+    public GameObject projLinePrefab;
 
     [Header("Dynamic")]
     public GameObject LaunchPoint;
@@ -45,7 +46,12 @@ public class Slingshot : MonoBehaviour
 
     void Update()
     {
-        if (!aimingMode) return;
+        if (!aimingMode || Projectile == null) 
+        {
+            aimingMode = false;
+            return;
+        }
+
 
         Vector3 mousePos2D = Input.mousePosition;
         mousePos2D.z = -Camera.main.transform.position.z;
@@ -70,8 +76,12 @@ public class Slingshot : MonoBehaviour
             projRB.isKinematic = false;
             projRB.collisionDetectionMode = CollisionDetectionMode.Continuous;
             projRB.velocity = -mouseDelta * VelocityMult;
+            FollowCam.SWITCH_VIEW(FollowCam.eView.slingshot);
+
             FollowCam.POI = Projectile;
+            Instantiate<GameObject>(projLinePrefab, Projectile.transform);
             Projectile = null;
+            MissionDemolition.SHOT_FIRED();
         }
     }
 }
