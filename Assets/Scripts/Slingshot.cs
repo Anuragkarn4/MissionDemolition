@@ -22,22 +22,19 @@ public class Slingshot : MonoBehaviour
         LaunchPoint.SetActive(false);
         LaunchPos = LaunchPointTrans.position;
     }
+
     void OnMouseEnter()
     {
-        //print("Slingshot: OnMouseEnter()");
         LaunchPoint.SetActive(true);
     }
 
     void OnMouseExit()
     {
-        //print("Slingshot: OnMouseExit()");
         LaunchPoint.SetActive(false);
     }
 
-
     void OnMouseDown()
     {
-        // The player has pressed the mouse button while over Slingshot
         aimingMode = true;
         Projectile = Instantiate(ProjectilePrefab) as GameObject;
         Projectile.transform.position = LaunchPos;
@@ -51,7 +48,6 @@ public class Slingshot : MonoBehaviour
             aimingMode = false;
             return;
         }
-
 
         Vector3 mousePos2D = Input.mousePosition;
         mousePos2D.z = -Camera.main.transform.position.z;

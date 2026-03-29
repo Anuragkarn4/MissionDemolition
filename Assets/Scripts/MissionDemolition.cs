@@ -30,6 +30,8 @@ public class MissionDemolition : MonoBehaviour
     public GameMode mode = GameMode.idle;
     public string showing = "Show Slingshot";
 
+    [Header("Game Over")]
+    public GameOverManager gameOverManager;
 
 
     // Start is called before the first frame update
@@ -84,11 +86,18 @@ public class MissionDemolition : MonoBehaviour
     void NextLevel()
     {
         level++;
-        if (level == levelMax)
+       if (level >= levelMax)
         {
-            level = 0;
-            shotsTaken = 0;
+            // stop spawning new levels
+            mode = GameMode.levelEnd;
+
+            // show Game Over screen
+            if (gameOverManager != null)
+                gameOverManager.ShowGameOver();
+
+            return; // do NOT call StartLevel again
         }
+
         StartLevel();
     }
 
@@ -101,5 +110,5 @@ public class MissionDemolition : MonoBehaviour
     {
         return S.castle;
     }
-        
+    
 }
