@@ -100,10 +100,12 @@ public class MissionDemolition : MonoBehaviour
 
         StartLevel();
     }
-
-    static public void SHOT_FIRED()
+    
+    
+     public static void SHOT_FIRED()
     {
         S.shotsTaken++;
+        S.UpdateGUI();
     }
 
     static public GameObject GET_CASTLE()

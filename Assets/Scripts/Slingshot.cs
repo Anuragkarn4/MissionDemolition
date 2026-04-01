@@ -8,12 +8,27 @@ public class Slingshot : MonoBehaviour
     public GameObject ProjectilePrefab;
     public float VelocityMult = 10f;
     public GameObject projLinePrefab;
+    public LineRenderer leftRubberBand;
+    public LineRenderer rightRubberBand;
+    public AudioSource snapSound; 
+
+    [Header("Trajectory Prediction")]
+    public LineRenderer trajectoryLine;
+    public int trajectoryPoints = 30;
+    public float trajectoryTime = 3f; 
 
     [Header("Dynamic")]
     public GameObject LaunchPoint;
     public Vector3 LaunchPos;
     public GameObject Projectile;
     public bool aimingMode;
+
+    void Start()
+    {
+        leftRubberBand.enabled = false;  
+        rightRubberBand.enabled = false;
+        trajectoryLine.enabled = false;
+    }
 
     void Awake()
     {
@@ -39,12 +54,58 @@ public class Slingshot : MonoBehaviour
         Projectile = Instantiate(ProjectilePrefab) as GameObject;
         Projectile.transform.position = LaunchPos;
         Projectile.GetComponent<Rigidbody>().isKinematic = true;
+        leftRubberBand.enabled = true;
+        rightRubberBand.enabled = true;
+    }
+
+
+    void UpdateTrajectory(Vector3 velocity)
+    {
+        trajectoryLine.enabled = true;
+        trajectoryLine.positionCount = trajectoryPoints;
+        
+        Vector3[] points = new Vector3[trajectoryPoints];
+        Vector3 lastPos = Projectile.transform.position;
+        
+        for (int i = 0; i < trajectoryPoints; i++)
+        {
+            Vector3 dir = velocity.normalized;
+            RaycastHit hit;
+            
+            // Predict next point with gravity
+            float time = i * Time.fixedDeltaTime * 2f;
+            Vector3 nextPos = Projectile.transform.position + velocity * time 
+                            + 0.5f * Physics.gravity * time * time;
+            
+            // Raycast between points to detect collisions
+            if (Physics.Raycast(lastPos, nextPos - lastPos, out hit, Vector3.Distance(lastPos, nextPos)))
+            {
+                points[i] = hit.point;
+                trajectoryLine.positionCount = i + 1;  // Stop at collision
+                break;
+            }
+            else
+            {
+                points[i] = nextPos;
+            }
+            lastPos = nextPos;
+        }
+        
+        trajectoryLine.SetPositions(points);
+    }
+
+    void HideTrajectory()
+    {
+        trajectoryLine.enabled = false;
     }
 
     void Update()
     {
         if (!aimingMode || Projectile == null) 
         {
+            leftRubberBand.enabled = false;
+            rightRubberBand.enabled = false;
+            HideTrajectory();
             aimingMode = false;
             return;
         }
@@ -65,9 +126,21 @@ public class Slingshot : MonoBehaviour
         Vector3 projPos = LaunchPos + mouseDelta;
         Projectile.transform.position = projPos;
 
+        // Predict trajectory
+        Vector3 predictedVelocity = -mouseDelta * VelocityMult;
+        UpdateTrajectory(predictedVelocity);
+
+        leftRubberBand.SetPosition(0, transform.Find("LeftArm/LeftTip").position);
+        leftRubberBand.SetPosition(1, Projectile.transform.position);
+
+        rightRubberBand.SetPosition(0, transform.Find("RightArm/RightTip").position);
+        rightRubberBand.SetPosition(1, Projectile.transform.position);
+
         if (Input.GetMouseButtonUp(0))
         {
             aimingMode = false;
+            snapSound.Play();
+            HideTrajectory();
             Rigidbody projRB = Projectile.GetComponent<Rigidbody>();
             projRB.isKinematic = false;
             projRB.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -76,6 +149,9 @@ public class Slingshot : MonoBehaviour
 
             FollowCam.POI = Projectile;
             Instantiate<GameObject>(projLinePrefab, Projectile.transform);
+
+            leftRubberBand.enabled = false;
+            rightRubberBand.enabled = false;
             Projectile = null;
             MissionDemolition.SHOT_FIRED();
         }
